@@ -9,7 +9,7 @@ logger = logging.getLogger("scrape_fastapi")
 
 
 class DentalStallHandler():
-    BASE_URL = 'https://dentalstall.com/shop/page/'
+    BASE_URL = "https://dentalstall.com/shop/page/"
     LIMIT = 1
     OFFSET = 1
     PROXY = None
@@ -34,42 +34,46 @@ class DentalStallHandler():
     def _make_request(self, url):
         for i in range(1, 3):
             try:
-                return requests.get(url, proxies=self._get_proxy(), timeout=30 * i)
+                return requests.get(url, proxies=self._get_proxy(), timeout=10 * i)
             except:
-                logger.warn(f'Failed to get products from {url}. Retrying with {30 * (i + 1)} seconds timeout.')
+                logger.warn(f"Failed to get products from {url}. Retrying with {10 * (i + 1)} seconds timeout.")
         
-        error_msg = f'Failed to get products from {url} after 3 retries.'
+        error_msg = f"Failed to get products from {url} after 3 retries."
         logger.error(error_msg)
         raise Exception(error_msg)
 
 
     def _get_product_img(self, product):
-        return product.xpath('div/div[1]/a/img/@data-lazy-src')[0]
+        return product.xpath("div/div[1]/a/img/@data-lazy-src")[0]
     
     def _get_product_short_title(self, product):
-        return product.xpath('div/div[2]/div[1]/h2/a/text()')[0]
+        return product.xpath("div/div[2]/div[1]/h2/a/text()")[0]
     
     def _get_product_url(self, product):
-        return product.xpath('div/div[2]/div[1]/h2/a/@href')[0]
+        return product.xpath("div/div[2]/div[1]/h2/a/@href")[0]
     
     def _get_product_code(self, product):
-        return self._get_product_url(product).split('/')[-2]
+        return self._get_product_url(product).split("/")[-2]
     
     def _get_product_full_title(self, product):
-        return self._get_product_code(product).replace('-', ' ').title()
+        return self._get_product_code(product).replace("-", " ").title()
     
     def _get_product_price(self, product):
         try:
-            return product.xpath('div/div[2]/div[2]/span[1]/ins/span/bdi/text()')[0]
+            return product.xpath("div/div[2]/div[2]/span[1]/ins/span/bdi/text()")[0]
         except:
             try:
-                return product.xpath('div/div[2]/div[2]/span[1]/span[2]/bdi/text()')[0]
+                return product.xpath("div/div[2]/div[2]/span[1]/span[2]/bdi/text()")[0]
             except:
-                return product.xpath('div/div[2]/div[2]/span/span/bdi/text()')[0]
+                try:
+                    return product.xpath("div/div[2]/div[2]/span/span/bdi/text()")[0]
+                except:
+                    logger.error(f"Failed to get price for product: {self._get_product_code(product)}")
+                    return 0
         
     def _get_products_page(self):
-        url = f'{self.BASE_URL}{self.OFFSET}/'
-        logger.info(f'Getting products from {url}')
+        url = f"{self.BASE_URL}{self.OFFSET}/"
+        logger.info(f"Getting products from {url}")
 
         page = self._make_request(url)
         tree = html.fromstring(page.content)
@@ -78,6 +82,7 @@ class DentalStallHandler():
         for product in products:
             img = self._get_product_img(product)
             short_title = self._get_product_short_title(product)
+            print(short_title)
             url = self._get_product_url(product)
             code = self._get_product_code(product)
             full_title = self._get_product_full_title(product)

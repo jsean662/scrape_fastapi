@@ -37,6 +37,9 @@ async def get_products(
     limit: int = 1,
     auth: bool = Depends(authenticate)
 ):
+    if offset > limit:
+        raise HTTPException(status_code=400, detail="Offset cannot be greater than limit")
+
     created_cnt = updated_cnt = unchanged_cnt = 0
     start_time = datetime.now()
     logger.info(f'Operation start time: {start_time.strftime("%Y-%m-%d %H:%M:%S")}.')
@@ -46,25 +49,25 @@ async def get_products(
 
     for products in product_pages:
         for key in products:
-            if cache.get(key) and cache.get(key) == products[key]['product_price']:
+            if cache.get(key) and cache.get(key) == products[key]["product_price"]:
                 unchanged_cnt += 1
                 continue
-            if cache.get(key) and cache.get(key) != products[key]['product_price']:
+            if cache.get(key) and cache.get(key) != products[key]["product_price"]:
                 updated_cnt += 1
-                cache[key] = products[key]['product_price']
+                cache[key] = products[key]["product_price"]
                 # logger.info(f'Product {products[key]["code"]} updated with new price {products[key]["product_price"]}')
             else:
                 created_cnt += 1
-                cache[key] = products[key]['product_price']
+                cache[key] = products[key]["product_price"]
                 # logger.info(f'New product {products[key]["code"]} added with price {products[key]["product_price"]}')
-            with open('data/dentalstall.csv', 'a') as file:
+            with open("data/dentalstall.csv", "a") as file:
                 # Note: Since we are appending to the file, CSV file makes more sense than JSON
                 # In case of JSON, we would have to read the file, update the data and write it back
                 file.write(
                     f'{products[key]["code"]},{products[key]["product_title"]},{products[key]["short_title"]},{products[key]["product_price"]},{products[key]["path_to_image"]},{products[key]["product_url"]},{products[key]["product_price"]},{products[key]["scraped_at"]}\n'
                 )
 
-    logger.info(f'Operation completed successfully.')       
+    logger.info(f"Operation completed successfully.")
     logger.info(f'Total products scraped: {created_cnt + updated_cnt + unchanged_cnt}.')
     logger.info(f'Summary: created: {created_cnt}; updated: {updated_cnt}; unchanged: {unchanged_cnt}.')
     logger.info(f'Total time taken in seconds to scrape: {(datetime.now() - start_time).seconds}.')
@@ -85,7 +88,7 @@ async def get_products(
     }
     
     
-# XPATHs for Dental Stall website
+# XPATHs for Dentalstall website
 # /html/body/div[1]/div[2]/div/div/div/div[4]/ul/li[1] -> main card
 # /html/body/div[1]/div[2]/div/div/div/div[4]/ul/li[1]/div/div[1]/a/img -> image
 # /html/body/div[1]/div[2]/div/div/div/div[4]/ul/li[1]/div/div[2]/div[1]/h2/a   -> product url
